@@ -1,6 +1,10 @@
 #!/usr/bin/env python3.7
 # -*- coding: utf-8 -*-
 
+"""
+ WTM：args到底是什么东西？？？
+"""
+
 import argparse
 import hashlib
 import json
@@ -18,29 +22,33 @@ import traceback
 import types
 from bilibili import Bilibili
 
-bundle_dir = os.path.dirname(sys.executable) if getattr(sys, "frozen", False) else os.path.dirname(os.path.abspath(__file__))
+bundle_dir = os.path.dirname(sys.executable) if getattr(sys, "frozen", False) else os.path.dirname(
+    os.path.abspath(__file__))
 
 default_url = lambda sha1: f"http://i0.hdslb.com/bfs/album/{sha1}.x-ms-bmp"
-meta_string = lambda url: ("bdrive://" + re.findall(r"[a-fA-F0-9]{40}", url)[0]) if re.match(r"^http(s?)://i0.hdslb.com/bfs/album/[a-fA-F0-9]{40}.x-ms-bmp$", url) else url
+meta_string = lambda url: ("bdrive://" + re.findall(r"[a-fA-F0-9]{40}", url)[0]) if re.match(
+    r"^http(s?)://i0.hdslb.com/bfs/album/[a-fA-F0-9]{40}.x-ms-bmp$", url) else url
+
 
 def bmp_header(data):
     return b"BM" \
-        + struct.pack("<l", 14 + 40 + 8 + len(data)) \
-        + b"\x00\x00" \
-        + b"\x00\x00" \
-        + b"\x3e\x00\x00\x00" \
-        + b"\x28\x00\x00\x00" \
-        + struct.pack("<l", len(data)) \
-        + b"\x01\x00\x00\x00" \
-        + b"\x01\x00" \
-        + b"\x01\x00" \
-        + b"\x00\x00\x00\x00" \
-        + struct.pack("<l", math.ceil(len(data) / 8)) \
-        + b"\x00\x00\x00\x00" \
-        + b"\x00\x00\x00\x00" \
-        + b"\x00\x00\x00\x00" \
-        + b"\x00\x00\x00\x00" \
-        + b"\x00\x00\x00\x00\xff\xff\xff\x00"
+           + struct.pack("<l", 14 + 40 + 8 + len(data)) \
+           + b"\x00\x00" \
+           + b"\x00\x00" \
+           + b"\x3e\x00\x00\x00" \
+           + b"\x28\x00\x00\x00" \
+           + struct.pack("<l", len(data)) \
+           + b"\x01\x00\x00\x00" \
+           + b"\x01\x00" \
+           + b"\x01\x00" \
+           + b"\x00\x00\x00\x00" \
+           + struct.pack("<l", math.ceil(len(data) / 8)) \
+           + b"\x00\x00\x00\x00" \
+           + b"\x00\x00\x00\x00" \
+           + b"\x00\x00\x00\x00" \
+           + b"\x00\x00\x00\x00" \
+           + b"\x00\x00\x00\x00\xff\xff\xff\x00"
+
 
 def calc_sha1(data, hexdigest=False):
     sha1 = hashlib.sha1()
@@ -50,6 +58,7 @@ def calc_sha1(data, hexdigest=False):
     else:
         sha1.update(data)
     return sha1.hexdigest() if hexdigest else sha1.digest()
+
 
 def fetch_meta(string):
     if re.match(r"^bdrive://[a-fA-F0-9]{40}$", string) or re.match(r"^[a-fA-F0-9]{40}$", string):
@@ -63,6 +72,7 @@ def fetch_meta(string):
         return meta_dict
     except:
         return None
+
 
 def image_upload(data, cookies):
     url = "https://api.vc.bilibili.com/api/v1/drawImage/upload"
@@ -82,6 +92,7 @@ def image_upload(data, cookies):
         response = None
     return response
 
+
 def image_download(url):
     headers = {
         'Referer': "http://t.bilibili.com/",
@@ -99,8 +110,10 @@ def image_download(url):
     except:
         return None
 
+
 def log(message):
     Bilibili._log(message)
+
 
 def read_history():
     try:
@@ -109,6 +122,7 @@ def read_history():
     except:
         history = {}
     return history
+
 
 def read_in_chunks(file_name, chunk_size=16 * 1024 * 1024, chunk_number=-1):
     chunk_counter = 0
@@ -121,15 +135,18 @@ def read_in_chunks(file_name, chunk_size=16 * 1024 * 1024, chunk_number=-1):
             else:
                 return
 
+
 def history_handle(args):
     history = read_history()
     if history:
         for index, meta_dict in enumerate(history.values()):
             prefix = f"[{index}]"
-            print(f"{prefix} {meta_dict['filename']} ({meta_dict['size'] / 1024 / 1024:.2f} MB), 共有{len(meta_dict['block'])}个分块, 上传于{time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(meta_dict['time']))}")
+            print(
+                f"{prefix} {meta_dict['filename']} ({meta_dict['size'] / 1024 / 1024:.2f} MB), 共有{len(meta_dict['block'])}个分块, 上传于{time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(meta_dict['time']))}")
             print(f"{' ' * len(prefix)} {meta_string(meta_dict['url'])}")
     else:
         print(f"暂无历史记录")
+
 
 def info_handle(args):
     meta_dict = fetch_meta(args.meta)
@@ -144,12 +161,14 @@ def info_handle(args):
     else:
         print("元数据解析失败")
 
+
 def login_handle(args):
     bilibili = Bilibili()
     if bilibili.login(username=args.username, password=args.password):
         bilibili.get_user_info()
         with open(os.path.join(bundle_dir, "cookies.json"), "w", encoding="utf-8") as f:
             f.write(json.dumps(bilibili.get_cookies(), ensure_ascii=False, indent=2))
+
 
 def upload_handle(args):
     def core(index, block):
@@ -208,7 +227,7 @@ def upload_handle(args):
                 pass
         return None
 
-    def write_history(first_4mb_sha1, meta_dict, url):
+    def write_history(first_4mb_sha1, meta_dict, url):  # 写操作日志
         history = read_history()
         history[first_4mb_sha1] = meta_dict
         history[first_4mb_sha1]['url'] = url
@@ -217,32 +236,39 @@ def upload_handle(args):
 
     start_time = time.time()
     file_name = args.file
+
     if not os.path.exists(file_name):
         log(f"{file_name}不存在")
         return None
     if os.path.isdir(file_name):
         log("不支持上传文件夹")
         return None
+    # 计算文件第一块的sha1，查历史记录，以免重复上传
     log(f"上传: {os.path.basename(file_name)} ({os.path.getsize(file_name) / 1024 / 1024:.2f} MB)")
     first_4mb_sha1 = calc_sha1(read_in_chunks(file_name, chunk_size=4 * 1024 * 1024, chunk_number=1), hexdigest=True)
     history = read_history()
     if first_4mb_sha1 in history:
         url = history[first_4mb_sha1]['url']
-        log(f"该文件已于{time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(history[first_4mb_sha1]['time']))}上传, 共有{len(history[first_4mb_sha1]['block'])}个分块")
+        log(
+            f"该文件已于{time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(history[first_4mb_sha1]['time']))}上传, 共有{len(history[first_4mb_sha1]['block'])}个分块")
         log(meta_string(url))
         return url
+    # 尝试使用cookie文件登录
     try:
         with open(os.path.join(bundle_dir, "cookies.json"), "r", encoding="utf-8") as f:
             cookies = json.loads(f.read())
     except:
         log("Cookies加载失败, 请先登录")
         return None
+
+    # 多线程操作
     log(f"线程数: {args.thread}")
-    done_flag = threading.Semaphore(0)
-    terminate_flag = threading.Event()
-    thread_pool = []
+    done_flag = threading.Semaphore(0)  # 初始化一个信号量
+    terminate_flag = threading.Event()  # 初始化一个事件，用于进程间通信
+    thread_pool = []  # 线程池
     block_dict = {}
     for index, block in enumerate(read_in_chunks(file_name, chunk_size=args.block_size * 1024 * 1024)):
+        # FIXME：不懂read_in_chunks()函数的返回是什么数据形式
         if len(thread_pool) >= args.thread:
             done_flag.acquire()
         if not terminate_flag.is_set():
@@ -255,6 +281,7 @@ def upload_handle(args):
         thread.join()
     if terminate_flag.is_set():
         return None
+
     sha1 = calc_sha1(read_in_chunks(file_name), hexdigest=True)
     meta_dict = {
         'time': int(time.time()),
@@ -270,13 +297,15 @@ def upload_handle(args):
         if response and response['code'] == 0:
             url = response['data']['image_url']
             log("元数据上传完毕")
-            log(f"{os.path.basename(file_name)}上传完毕, 共有{len(meta_dict['block'])}个分块, 用时{int(time.time() - start_time)}秒, 平均速度{meta_dict['size'] / 1024 / 1024 / (time.time() - start_time):.2f} MB/s")
+            log(
+                f"{os.path.basename(file_name)}上传完毕, 共有{len(meta_dict['block'])}个分块, 用时{int(time.time() - start_time)}秒, 平均速度{meta_dict['size'] / 1024 / 1024 / (time.time() - start_time):.2f} MB/s")
             log(meta_string(url))
             write_history(first_4mb_sha1, meta_dict, url)
             return url
         log(f"元数据第{_ + 1}次上传失败")
     else:
         return None
+
 
 def download_handle(args):
     def core(index, block_dict):
@@ -320,14 +349,16 @@ def download_handle(args):
     meta_dict = fetch_meta(args.meta)
     if meta_dict:
         file_name = args.file if args.file else meta_dict['filename']
-        log(f"下载: {os.path.basename(file_name)} ({meta_dict['size'] / 1024 / 1024:.2f} MB), 共有{len(meta_dict['block'])}个分块, 上传于{time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(meta_dict['time']))}")
+        log(
+            f"下载: {os.path.basename(file_name)} ({meta_dict['size'] / 1024 / 1024:.2f} MB), 共有{len(meta_dict['block'])}个分块, 上传于{time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(meta_dict['time']))}")
     else:
         log("元数据解析失败")
         return None
     log(f"线程数: {args.thread}")
     download_block_list = []
     if os.path.exists(file_name):
-        if os.path.getsize(file_name) == meta_dict['size'] and calc_sha1(read_in_chunks(file_name), hexdigest=True) == meta_dict['sha1']:
+        if os.path.getsize(file_name) == meta_dict['size'] and calc_sha1(read_in_chunks(file_name), hexdigest=True) == \
+                meta_dict['sha1']:
             log(f"{os.path.basename(file_name)}已存在于本地, 且与服务器端文件内容一致")
             return file_name
         elif is_overwrite(file_name):
@@ -344,7 +375,7 @@ def download_handle(args):
         else:
             return None
     else:
-        download_block_list = list(range(len(meta_dict['block'])))        
+        download_block_list = list(range(len(meta_dict['block'])))
     done_flag = threading.Semaphore(0)
     terminate_flag = threading.Event()
     file_lock = threading.Lock()
@@ -364,7 +395,8 @@ def download_handle(args):
         if terminate_flag.is_set():
             return None
         f.truncate(sum(block['size'] for block in meta_dict['block']))
-    log(f"{os.path.basename(file_name)}下载完毕, 用时{int(time.time() - start_time)}秒, 平均速度{meta_dict['size'] / 1024 / 1024 / (time.time() - start_time):.2f} MB/s")
+    log(
+        f"{os.path.basename(file_name)}下载完毕, 用时{int(time.time() - start_time)}秒, 平均速度{meta_dict['size'] / 1024 / 1024 / (time.time() - start_time):.2f} MB/s")
     sha1 = calc_sha1(read_in_chunks(file_name), hexdigest=True)
     if sha1 == meta_dict['sha1']:
         log(f"{os.path.basename(file_name)}校验通过")
@@ -373,41 +405,51 @@ def download_handle(args):
         log(f"{os.path.basename(file_name)}校验未通过")
         return None
 
+
 if __name__ == "__main__":
     signal.signal(signal.SIGINT, lambda signum, frame: os.kill(os.getpid(), 9))
-    parser = argparse.ArgumentParser(description="BiliDrive", epilog="By Hsury, 2019/11/9")
-    subparsers = parser.add_subparsers()
-    history_parser = subparsers.add_parser("history", help="view upload history")
-    history_parser.set_defaults(func=history_handle)
-    info_parser = subparsers.add_parser("info", help="view meta info")
-    info_parser.add_argument("meta", help="meta url")
+    # ======================用于实现交互式命令行操作=========================
+    parser = argparse.ArgumentParser(description="BiliDrive", epilog="By Hsury, 2019/11/9")  # 实例化一个解析器
+    subparsers = parser.add_subparsers()  # 派生子解析器
+
+    history_parser = subparsers.add_parser("history", help="view upload history")  # 解析history命令
+    history_parser.set_defaults(func=history_handle)  # 设置默认启动函数
+
+    info_parser = subparsers.add_parser("info", help="view meta info")  # 解析info命令
+    info_parser.add_argument("meta", help="meta url")   # 添加必选参数
     info_parser.set_defaults(func=info_handle)
-    login_parser = subparsers.add_parser("login", help="log in to bilibili")
+
+    login_parser = subparsers.add_parser("login", help="log in to bilibili")  # 解析login命令
     login_parser.add_argument("username", help="username")
     login_parser.add_argument("password", help="password")
     login_parser.set_defaults(func=login_handle)
-    upload_parser = subparsers.add_parser("upload", help="upload a file")
+
+    upload_parser = subparsers.add_parser("upload", help="upload a file")  # 解析upload命令
     upload_parser.add_argument("file", help="name of the file to upload")
-    upload_parser.add_argument("-b", "--block-size", default=4, type=int, help="block size in MB")
+    upload_parser.add_argument("-b", "--block-size", default=4, type=int, help="block size in MB")   # 设置一个可选参数
     upload_parser.add_argument("-t", "--thread", default=4, type=int, help="upload thread number")
     upload_parser.set_defaults(func=upload_handle)
-    download_parser = subparsers.add_parser("download", help="download a file")
+
+    download_parser = subparsers.add_parser("download", help="download a file")  # 解析download命令
     download_parser.add_argument("meta", help="meta url")
     download_parser.add_argument("file", nargs="?", default="", help="new file name")
     download_parser.add_argument("-f", "--force", action="store_true", help="force to overwrite if file exists")
     download_parser.add_argument("-t", "--thread", default=8, type=int, help="download thread number")
     download_parser.set_defaults(func=download_handle)
-    shell = False
+    # =======================================================================
+    shell = False  # FIXME:没搞懂这句话的意思
     while True:
         if shell:
-            args = shlex.split(input("BiliDrive > "))
-            if args == ["exit"]:
+            args = shlex.split(input("BiliDrive > "))  # 初始化一个命令行解析器
+            if args == ["exit"]:  # 接受参数
                 break
             elif args == ["help"]:
                 parser.print_help()
             else:
                 try:
-                    args = parser.parse_args(args)
+                    # FIXME:没看懂执行流程，变量命名有毒
+
+                    args = parser.parse_args(args)  # 按照参数启动对应的处理代码
                     args.func(args)
                 except:
                     pass
